@@ -20,7 +20,7 @@ public class Main {
 
         GameConfig config = GameConfig.base();
         Restaurant restaurant = new Restaurant(Menu.standard(), config.getTableCount());
-        ArrivalSchedule schedule = new ArrivalSchedule(config.getArrivalTurns(), new CustomerFactory());
+        ArrivalSchedule schedule = new ArrivalSchedule(config.getArrivals(), new CustomerFactory());
         GameController controller = new GameController(config, restaurant, schedule, new ObjectiveEvaluator(config));
 
         new ConsoleUI(controller, new StateFormatter(), System.in, System.out, echo).run();
