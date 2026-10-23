@@ -78,7 +78,7 @@ _To be added in `stage-2`: VIP and Critic rules, the Critic's special behaviour,
 
 ### Host, ComboMeal and Happy Hour (Stage 3)
 
-_To be dded in `stage-3`: Host seating, the combo choice rule, and Happy Hour activation and pricing._
+_To be added in `stage-3`: Host seating, the combo choice rule, and Happy Hour activation and pricing._
 
 ## Design overview
 

@@ -3,8 +3,8 @@ package restaurantrush.entity;
 /**
  * A restaurant customer. The common visit flow (seat, order, eat, pay, leave)
  * lives here and every transition checks the current state. Behaviour that
- * varies by customer type is exposed as abstract hooks so that subclasses can
- * change it without the controller checking types.
+ * varies by customer type is exposed as hooks so that subclasses can change it
+ * without the controller checking types.
  */
 public abstract class Customer {
 
@@ -28,8 +28,15 @@ public abstract class Customer {
 
     // ---- Type-specific behaviour -------------------------------------------------------
 
-    /** The customer picks their own dish; the manager never chooses it. */
-    public abstract MenuItem chooseDish(Menu menu);
+    /**
+     * The customer picks their own dish; the manager never chooses it.
+     * Default rule (deterministic): customer n orders menu item (n - 1) mod menuSize,
+     * so with the base menu C1 Salad, C2 Burger, C3 Pasta, C4 Salad, C5 Burger, C6 Pasta.
+     * Customer types with their own preference override this.
+     */
+    public MenuItem chooseDish(Menu menu) {
+        return menu.get((number - 1) % menu.size());
+    }
 
     /** Satisfaction lost for each turn spent waiting for a table or food. */
     public abstract int getWaitingPenalty();
@@ -39,6 +46,9 @@ public abstract class Customer {
 
     /** Short label for the customer type, used in displays. */
     public abstract String getTypeName();
+
+    /** One-line summary of how this customer type behaves, used in displays. */
+    public abstract String describeBehaviour();
 
     // ---- Visit flow --------------------------------------------------------------------
 
