@@ -109,7 +109,7 @@ public class ConsoleUI {
         MenuItem item = order.getItem();
         out.println("OK: " + customer.getId() + " orders " + item.getName() + " (" + item.getPrepUnits()
                 + " prep unit" + (item.getPrepUnits() == 1 ? "" : "s") + "). Bill locked at "
-                + Money.format(order.getPriceCents()) + ".");
+                + formatter.bill(order) + ".");
         return true;
     }
 
@@ -214,7 +214,7 @@ public class ConsoleUI {
     }
 
     private void printIntro() {
-        out.println("==================== RESTAURANT RUSH (Stage 1) ====================");
+        out.println("==================== RESTAURANT RUSH (Stage 2) ====================");
         out.println("You are the manager. " + controller.getMaxTurns() + " turns, "
                 + controller.getRestaurant().getTables().size() + " tables, 1 Waiter, 1 Chef, 1 Cashier.");
         out.println("Menu:");

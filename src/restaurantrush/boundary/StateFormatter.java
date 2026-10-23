@@ -25,7 +25,7 @@ public class StateFormatter {
 
     public String arrival(Customer customer) {
         return ">> " + customer.getId() + " (" + customer.getTypeName() + ") arrives and joins the queue (satisfaction "
-                + customer.getSatisfaction() + ").";
+                + customer.getSatisfaction() + "). " + customer.getTypeName() + ": " + customer.describeBehaviour() + ".";
     }
 
     /** Start-of-turn display (brief Section 3.1). */
@@ -41,7 +41,7 @@ public class StateFormatter {
         List<Customer> queued = r.getQueuedCustomers();
         sb.append("Waiting queue: ");
         sb.append(queued.isEmpty() ? "(empty)"
-                : queued.stream().map(c -> c.getId() + " (sat " + c.getSatisfaction() + ")")
+                : queued.stream().map(c -> c.getId() + " " + c.getTypeName() + " (sat " + c.getSatisfaction() + ")")
                         .collect(Collectors.joining(", ")));
         sb.append('\n');
 
@@ -61,14 +61,22 @@ public class StateFormatter {
 
     public String customerLine(Customer c) {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("%-3s sat %3d  %-13s", c.getId(), c.getSatisfaction(), c.getState()));
+        sb.append(String.format("%-3s %-9s sat %3d  %-13s", c.getId(), "[" + c.getTypeName() + "]",
+                c.getSatisfaction(), c.getState()));
         Order order = c.getOrder();
         sb.append(order == null ? "  order: -" : "  order: " + orderLine(order));
         return sb.toString();
     }
 
     public String orderLine(Order order) {
-        return order.getItem().getName() + " " + Money.format(order.getPriceCents()) + " [" + order.describeStatus() + "]";
+        return order.getItem().getName() + " " + bill(order) + " [" + order.describeStatus() + "]";
+    }
+
+    /** The locked bill, with the menu price alongside when the customer's type changed it, e.g. "$13.50 (list $15.00)". */
+    public String bill(Order order) {
+        int listPrice = order.getItem().getPriceCents();
+        String bill = Money.format(order.getPriceCents());
+        return order.getPriceCents() == listPrice ? bill : bill + " (list " + Money.format(listPrice) + ")";
     }
 
     private String waiterOptions(Restaurant r) {
