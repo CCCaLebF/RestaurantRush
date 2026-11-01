@@ -7,7 +7,8 @@ import java.util.Comparator;
  *
  * Order preference (our Stage 2 rule): the Critic always orders the most elaborate
  * dish, meaning the item with the most preparation units, with ties broken by the
- * higher price. With the base menu this is Pasta, whatever the Critic's arrival number.
+ * higher price. With the Stage 3 menu this is the Burger + Pasta combo (3 units, $29.70),
+ * whatever the Critic's arrival number.
  */
 public class CriticCustomer extends Customer {
 

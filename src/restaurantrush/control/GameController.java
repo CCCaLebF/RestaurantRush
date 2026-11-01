@@ -9,21 +9,24 @@ import restaurantrush.entity.InvalidActionException;
 import restaurantrush.entity.Order;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.entity.Table;
+import restaurantrush.entity.staff.Staff;
 
 /**
  * Runs the turn sequence. It holds no I/O: a boundary object calls the methods
  * below in order, and the controller rejects calls made out of order.
  *
  * <pre>
- * startTurn()                  step 1  arrivals
- * waiter...() / waiterWait()   step 2-3 Waiter acts first
+ * startTurn()                  step 1  arrivals (and Happy Hour recovery if it is still active)
+ * activateHappyHour()          optional, at the start of the turn, before any staff task
+ * hostSeat() / hostWait()      step 2-3 the Host acts first
+ * waiter...() / waiterWait()   step 2-3 then the Waiter
  * chefPrepare() / chefWait()   step 2-3 then the Chef
  * endTurn()                    steps 4-6 eating and payment, waiting and abandonment, result
  * </pre>
  */
 public class GameController {
 
-    private enum Phase { BETWEEN_TURNS, WAITER, CHEF, RESOLVE, GAME_OVER }
+    private enum Phase { BETWEEN_TURNS, HOST, WAITER, CHEF, RESOLVE, GAME_OVER }
 
     private final GameConfig config;
     private final Restaurant restaurant;
@@ -47,16 +50,36 @@ public class GameController {
     public List<Customer> startTurn() {
         requirePhase(Phase.BETWEEN_TURNS);
         turn++;
-        restaurant.getWaiter().resetForTurn();
-        restaurant.getChef().resetForTurn();
-        restaurant.getCashier().resetForTurn();
+        restaurant.getStaff().forEach(Staff::resetForTurn);
         List<Customer> arrivals = schedule.arrivalsFor(turn);
         arrivals.forEach(restaurant::admit);
-        phase = Phase.WAITER;
+        restaurant.applyHappyHourRecovery();
+        phase = Phase.HOST;
         return arrivals;
     }
 
-    // ---- Steps 2-3: Waiter then Chef ---------------------------------------------------
+    /**
+     * The manager switches Happy Hour on. Only allowed at the start of a turn,
+     * before any staff task. Returns the customers who recovered satisfaction.
+     */
+    public List<Customer> activateHappyHour() throws InvalidActionException {
+        requirePhase(Phase.HOST);
+        return restaurant.activateHappyHour();
+    }
+
+    // ---- Steps 2-3: Host, then Waiter, then Chef ---------------------------------------
+
+    public void hostSeat(Customer customer, Table table) throws InvalidActionException {
+        requirePhase(Phase.HOST);
+        restaurant.getHost().seat(restaurant, customer, table);
+        phase = Phase.WAITER;
+    }
+
+    public void hostWait() throws InvalidActionException {
+        requirePhase(Phase.HOST);
+        restaurant.getHost().waitTurn();
+        phase = Phase.WAITER;
+    }
 
     public void waiterSeat(Customer customer, Table table) throws InvalidActionException {
         requirePhase(Phase.WAITER);
@@ -122,6 +145,9 @@ public class GameController {
                 }
             }
         }
+
+        // Happy Hour uses up one of its active turns.
+        restaurant.endTurnEffects();
 
         // Step 6: the game always runs every turn; the result is decided after the last one.
         if (turn >= config.getMaxTurns()) {

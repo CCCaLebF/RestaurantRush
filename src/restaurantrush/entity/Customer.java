@@ -1,5 +1,7 @@
 package restaurantrush.entity;
 
+import java.util.function.IntUnaryOperator;
+
 /**
  * A restaurant customer. The common visit flow (seat, order, eat, pay, leave)
  * lives here and every transition checks the current state. Behaviour that
@@ -30,8 +32,9 @@ public abstract class Customer {
 
     /**
      * The customer picks their own dish; the manager never chooses it.
-     * Default rule (deterministic): customer n orders menu item (n - 1) mod menuSize,
-     * so with the base menu C1 Salad, C2 Burger, C3 Pasta, C4 Salad, C5 Burger, C6 Pasta.
+     * Default rule (deterministic): customer n orders menu item (n - 1) mod menuSize.
+     * The base menu has three dishes and three combos, so C1 Salad, C2 Burger, C3 Pasta,
+     * C4 Salad + Burger, C5 Salad + Pasta, C6 Burger + Pasta.
      * Customer types with their own preference override this.
      */
     public MenuItem chooseDish(Menu menu) {
@@ -59,14 +62,18 @@ public abstract class Customer {
         state = CustomerState.SEATED;
     }
 
-    /** Takes this customer's order; the dish and price are decided by the customer. */
-    public Order placeOrder(Menu menu) throws InvalidActionException {
+    /**
+     * Takes this customer's order; the dish and the bill are decided by the customer.
+     * The restaurant's price adjustment (e.g. Happy Hour) is applied after the
+     * customer-type discount, and the result is locked into the order.
+     */
+    public Order placeOrder(Menu menu, IntUnaryOperator priceAdjustment) throws InvalidActionException {
         if (state != CustomerState.SEATED) {
             throw new InvalidActionException(getId() + " is " + state
                     + "; an order can only be taken from a seated customer who has not ordered yet.");
         }
         MenuItem item = chooseDish(menu);
-        order = new Order(this, item, computeBillCents(item));
+        order = new Order(this, item, priceAdjustment.applyAsInt(computeBillCents(item)));
         state = CustomerState.AWAITING_FOOD;
         return order;
     }
@@ -115,6 +122,13 @@ public abstract class Customer {
 
     public void applyWaitingPenalty() {
         satisfaction = Math.max(0, satisfaction - getWaitingPenalty());
+    }
+
+    /** A customer still waiting for a table or food regains satisfaction, up to the maximum. */
+    public void recover(int points) {
+        if (isLosingSatisfaction()) {
+            satisfaction = Math.min(MAX_SATISFACTION, satisfaction + points);
+        }
     }
 
     public boolean shouldLeave() {

@@ -8,6 +8,7 @@ import java.util.Scanner;
 import restaurantrush.control.GameController;
 import restaurantrush.control.TurnReport;
 import restaurantrush.entity.Customer;
+import restaurantrush.entity.HappyHour;
 import restaurantrush.entity.InvalidActionException;
 import restaurantrush.entity.MenuItem;
 import restaurantrush.entity.Money;
@@ -51,12 +52,59 @@ public class ConsoleUI {
         arrivals.forEach(c -> out.println(formatter.arrival(c)));
         out.println(formatter.startOfTurn(controller));
 
+        chooseHappyHour();
+        chooseHostTask();
         chooseWaiterTask();
         chooseChefTask();
 
         TurnReport report = controller.endTurn();
         out.println(formatter.endOfTurn(report, controller));
         report.getFinalResult().ifPresent(result -> out.println(formatter.finalResult(result, controller)));
+    }
+
+    // ---- Manager: Happy Hour -----------------------------------------------------------
+
+    /** Asked every turn, so that a second activation is refused with a reason rather than hidden. */
+    private void chooseHappyHour() {
+        HappyHour happyHour = controller.getRestaurant().getHappyHour();
+        boolean finalTurn = controller.getTurn() == controller.getMaxTurns();
+        while (true) {
+            out.println("\nManager - Happy Hour is " + formatter.happyHourStatus(happyHour, finalTurn) + ":");
+            out.println("  1) Activate Happy Hour   0) Not now");
+            if (readChoice(0, 1) == 0) {
+                return;
+            }
+            try {
+                List<Customer> recovered = controller.activateHappyHour();
+                out.println("OK: Happy Hour is " + formatter.happyHourStatus(happyHour, finalTurn)
+                        + ". " + formatter.recovery(recovered));
+                return;
+            } catch (InvalidActionException e) {
+                out.println("Invalid: " + e.getMessage() + " Choose again.");
+            }
+        }
+    }
+
+    // ---- Host --------------------------------------------------------------------------
+
+    private void chooseHostTask() {
+        while (true) {
+            out.println("\nHost - choose a task:");
+            out.println("  1) Seat a queued customer   0) Wait");
+            int choice = readChoice(0, 1);
+            try {
+                if (choice == 0) {
+                    controller.hostWait();
+                    out.println("OK: Host waits this turn.");
+                    return;
+                }
+                if (seatCustomer(true)) {
+                    return;
+                }
+            } catch (InvalidActionException e) {
+                out.println("Invalid: " + e.getMessage() + " Choose again (the Host's task is not used up).");
+            }
+        }
     }
 
     // ---- Waiter ------------------------------------------------------------------------
@@ -68,7 +116,7 @@ public class ConsoleUI {
             int choice = readChoice(0, 3);
             try {
                 boolean done = switch (choice) {
-                    case 1 -> seatCustomer();
+                    case 1 -> seatCustomer(false);
                     case 2 -> takeOrder();
                     case 3 -> serveOrder();
                     default -> {
@@ -86,7 +134,8 @@ public class ConsoleUI {
         }
     }
 
-    private boolean seatCustomer() throws InvalidActionException {
+    /** Seating is offered to both the Host and the Waiter; the same domain rules apply. */
+    private boolean seatCustomer(boolean byHost) throws InvalidActionException {
         Customer customer = pickCustomer("Seat which customer?");
         if (customer == null) {
             return false;
@@ -95,8 +144,12 @@ public class ConsoleUI {
         if (table == null) {
             return false;
         }
-        controller.waiterSeat(customer, table);
-        out.println("OK: " + customer.getId() + " seated at " + table.getId() + ".");
+        if (byHost) {
+            controller.hostSeat(customer, table);
+        } else {
+            controller.waiterSeat(customer, table);
+        }
+        out.println("OK: " + (byHost ? "Host" : "Waiter") + " seats " + customer.getId() + " at " + table.getId() + ".");
         return true;
     }
 
@@ -214,13 +267,17 @@ public class ConsoleUI {
     }
 
     private void printIntro() {
-        out.println("==================== RESTAURANT RUSH (Stage 2) ====================");
+        Restaurant r = controller.getRestaurant();
+        out.println("==================== RESTAURANT RUSH (Stage 3) ====================");
         out.println("You are the manager. " + controller.getMaxTurns() + " turns, "
-                + controller.getRestaurant().getTables().size() + " tables, 1 Waiter, 1 Chef, 1 Cashier.");
+                + r.getTables().size() + " tables, 1 Host, 1 Waiter, 1 Chef, 1 Cashier.");
         out.println("Menu:");
-        for (MenuItem item : controller.getRestaurant().getMenu().getItems()) {
+        for (MenuItem item : r.getMenu().getItems()) {
             out.println("  " + item);
         }
+        out.println("Happy Hour: once per game, at the start of a turn, for that turn and the next. Orders taken get "
+                + r.getHappyHour().getDiscountPercent() + "% off, and customers waiting for a table or food recover "
+                + HappyHour.RECOVERY + " satisfaction at the start of each active turn.");
         out.println("Win at the end of turn " + controller.getMaxTurns() + ": at least "
                 + controller.getConfig().getTargetPaidCustomers() + " paid customers, revenue at least "
                 + Money.format(controller.getConfig().getTargetRevenueCents())

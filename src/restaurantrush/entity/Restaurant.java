@@ -7,13 +7,15 @@ import java.util.Optional;
 
 import restaurantrush.entity.staff.Cashier;
 import restaurantrush.entity.staff.Chef;
+import restaurantrush.entity.staff.Host;
+import restaurantrush.entity.staff.Staff;
 import restaurantrush.entity.staff.Waiter;
 
 /**
- * The restaurant's state: tables, waiting queue, menu, staff, ledger and every
- * customer who has arrived. Operations that touch several of these objects at
- * once (seating, serving, payment, departure) are kept here so they stay
- * consistent, and staff classes call them rather than editing state directly.
+ * The restaurant's state: tables, waiting queue, menu, staff, ledger, Happy Hour
+ * and every customer who has arrived. Operations that touch several of these
+ * objects at once (seating, ordering, serving, payment, departure) are kept here
+ * so they stay consistent, and staff classes call them rather than editing state directly.
  */
 public class Restaurant {
 
@@ -22,6 +24,8 @@ public class Restaurant {
     private final WaitingQueue queue = new WaitingQueue();
     private final List<Customer> customers = new ArrayList<>();
     private final Ledger ledger = new Ledger();
+    private final HappyHour happyHour = new HappyHour();
+    private final Host host = new Host("Host");
     private final Waiter waiter = new Waiter("Waiter");
     private final Chef chef = new Chef("Chef");
     private final Cashier cashier = new Cashier("Cashier");
@@ -53,8 +57,9 @@ public class Restaurant {
         queue.remove(customer);
     }
 
+    /** The bill is locked when the order is taken, with Happy Hour applied if it is active now. */
     public Order takeOrder(Customer customer) throws InvalidActionException {
-        return customer.placeOrder(menu);
+        return customer.placeOrder(menu, happyHour::applyTo);
     }
 
     public void serve(Customer customer, int turn) throws InvalidActionException {
@@ -80,6 +85,30 @@ public class Restaurant {
 
     private void freeTableOf(Customer customer) {
         findTableOf(customer).ifPresent(Table::free);
+    }
+
+    /**
+     * Switches Happy Hour on and applies this turn's recovery at once.
+     * Returns the customers who recovered.
+     */
+    public List<Customer> activateHappyHour() throws InvalidActionException {
+        happyHour.activate();
+        return applyHappyHourRecovery();
+    }
+
+    /** At the start of an active Happy Hour turn, customers waiting for a table or food recover. */
+    public List<Customer> applyHappyHourRecovery() {
+        if (!happyHour.isActive()) {
+            return List.of();
+        }
+        List<Customer> waiting = getActiveCustomers().stream().filter(Customer::isLosingSatisfaction).toList();
+        waiting.forEach(c -> c.recover(HappyHour.RECOVERY));
+        return waiting;
+    }
+
+    /** End-of-turn upkeep: one Happy Hour turn is used up. */
+    public void endTurnEffects() {
+        happyHour.endTurn();
     }
 
     // ---- Queries -----------------------------------------------------------------------
@@ -153,6 +182,19 @@ public class Restaurant {
 
     public Ledger getLedger() {
         return ledger;
+    }
+
+    public HappyHour getHappyHour() {
+        return happyHour;
+    }
+
+    /** Every staff member, in the order they act each turn. */
+    public List<Staff> getStaff() {
+        return List.of(host, waiter, chef, cashier);
+    }
+
+    public Host getHost() {
+        return host;
     }
 
     public Waiter getWaiter() {

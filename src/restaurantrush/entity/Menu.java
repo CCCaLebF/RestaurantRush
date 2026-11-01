@@ -16,12 +16,19 @@ public class Menu {
         this.items.addAll(items);
     }
 
-    /** The Stage 1 base menu: Salad, Burger, Pasta (in this order). */
+    /**
+     * The base menu: Salad, Burger, Pasta, then a combo of each pair of them
+     * (Salad + Burger, Salad + Pasta, Burger + Pasta), in this order.
+     */
     public static Menu standard() {
+        MenuItem salad = new MenuItem("Salad", 900, 1);
+        MenuItem burger = new MenuItem("Burger", 1500, 1);
+        MenuItem pasta = new MenuItem("Pasta", 1800, 2);
         return new Menu(List.of(
-                new MenuItem("Salad", 900, 1),
-                new MenuItem("Burger", 1500, 1),
-                new MenuItem("Pasta", 1800, 2)));
+                salad, burger, pasta,
+                new ComboMeal(salad, burger),
+                new ComboMeal(salad, pasta),
+                new ComboMeal(burger, pasta)));
     }
 
     public List<MenuItem> getItems() {

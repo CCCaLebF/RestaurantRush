@@ -8,6 +8,7 @@ import restaurantrush.control.GameController;
 import restaurantrush.control.GameResult;
 import restaurantrush.control.TurnReport;
 import restaurantrush.entity.Customer;
+import restaurantrush.entity.HappyHour;
 import restaurantrush.entity.Ledger;
 import restaurantrush.entity.Money;
 import restaurantrush.entity.Order;
@@ -38,6 +39,14 @@ public class StateFormatter {
           .append(" | Paid: ").append(ledger.getPaidCount())
           .append(" | Left: ").append(ledger.getDepartureCount()).append('\n');
 
+        HappyHour happyHour = r.getHappyHour();
+        sb.append("Happy Hour: ").append(happyHourStatus(happyHour, controller.getTurn() == controller.getMaxTurns()));
+        if (happyHour.isActive()) {
+            sb.append("; customers waiting for a table or food recovered ").append(HappyHour.RECOVERY)
+              .append(" at the start of this turn");
+        }
+        sb.append('\n');
+
         List<Customer> queued = r.getQueuedCustomers();
         sb.append("Waiting queue: ");
         sb.append(queued.isEmpty() ? "(empty)"
@@ -53,6 +62,7 @@ public class StateFormatter {
         }
 
         sb.append("Staff tasks available:\n");
+        sb.append("  Host    - ").append(seatOptions(r)).append('\n');
         sb.append("  Waiter  - ").append(waiterOptions(r)).append('\n');
         sb.append("  Chef    - ").append(chefOptions(r)).append('\n');
         sb.append("  Cashier - ").append(r.getCashier().describeDuty());
@@ -72,19 +82,48 @@ public class StateFormatter {
         return order.getItem().getName() + " " + bill(order) + " [" + order.describeStatus() + "]";
     }
 
-    /** The locked bill, with the menu price alongside when the customer's type changed it, e.g. "$13.50 (list $15.00)". */
+    /**
+     * The locked bill, with the menu price alongside when a discount (customer type
+     * or Happy Hour) changed it, e.g. "$13.50 (list $15.00)".
+     */
     public String bill(Order order) {
         int listPrice = order.getItem().getPriceCents();
         String bill = Money.format(order.getPriceCents());
         return order.getPriceCents() == listPrice ? bill : bill + " (list " + Money.format(listPrice) + ")";
     }
 
-    private String waiterOptions(Restaurant r) {
-        String seat = r.getQueuedCustomers().isEmpty() || r.getFreeTables().isEmpty()
+    /**
+     * Happy Hour's state and remaining duration, e.g. "ACTIVE: 2 turns left (this turn and next)".
+     * On the game's final turn there is no next turn, so it shows "last turn".
+     */
+    public String happyHourStatus(HappyHour happyHour, boolean finalTurn) {
+        if (happyHour.isActive()) {
+            String left = happyHour.getTurnsLeft() == 1 || finalTurn ? "last turn"
+                    : happyHour.getTurnsLeft() + " turns left (this turn and next)";
+            return "ACTIVE: " + left + ", " + happyHour.getDiscountPercent() + "% off orders taken";
+        }
+        return happyHour.isAvailable() ? "available (once per game)" : "used";
+    }
+
+    /** Which customers regained satisfaction when Happy Hour was switched on. */
+    public String recovery(List<Customer> recovered) {
+        if (recovered.isEmpty()) {
+            return "No one is waiting for a table or food, so no one recovers.";
+        }
+        return "Recovered +" + HappyHour.RECOVERY + " (max " + Customer.MAX_SATISFACTION + "): "
+                + recovered.stream().map(c -> c.getId() + " -> " + c.getSatisfaction()).collect(Collectors.joining(", "))
+                + ".";
+    }
+
+    private String seatOptions(Restaurant r) {
+        return r.getQueuedCustomers().isEmpty() || r.getFreeTables().isEmpty()
                 ? "seat: none" : "seat: " + ids(r.getQueuedCustomers()) + " -> " + tableIds(r.getFreeTables());
+    }
+
+    private String waiterOptions(Restaurant r) {
         String order = r.getSeatedWithoutOrder().isEmpty() ? "take order: none" : "take order: " + ids(r.getSeatedWithoutOrder());
         String serve = r.getCustomersWithReadyOrders().isEmpty() ? "serve: none" : "serve: " + ids(r.getCustomersWithReadyOrders());
-        return seat + " | " + order + " | " + serve;
+        return seatOptions(r) + " | " + order + " | " + serve;
     }
 
     private String chefOptions(Restaurant r) {
