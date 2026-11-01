@@ -130,6 +130,7 @@ Each stage is a tagged, runnable commit: `git checkout stage-1` (or `stage-2`, `
 | `control/CustomerType.java` | Enum `REGULAR`, `VIP`, `CRITIC`, so the schedule can say which type arrives |
 | `control/Arrival.java` | Record `(turn, type)`: one scheduled arrival |
 | `TEST_NOTES.md` | Stage 2 reproducible runs with actual outputs, and behaviour checks |
+| `diagrams/RestaurantRushStage2.drawio` | Stage 2 class diagram: adds `VIPCustomer`, `CriticCustomer`, `CustomerType` and `Arrival`, the factory's «create» links to each customer type, and the polymorphism note. It also draws six getters that already existed in Stage 1 but were left off its diagram (`GameController.getRestaurant/getResult`, `TurnReport.getPaidCustomer/getFinalResult`, `Restaurant.getTables/getAllCustomers`); their code is unchanged. |
 
 **Changed files (with reasons)**
 
@@ -146,12 +147,12 @@ Each stage is a tagged, runnable commit: `git checkout stage-1` (or `stage-2`, `
 | `boundary/ConsoleUI.java` | Banner says Stage 2; the take-order message shows the discounted bill | Display only |
 | `runs/victory.txt` | New keystrokes | The Stage 1 strategy no longer wins with a VIP and a Critic in the schedule (it ends with 3 paid, $40.50) |
 | `README.md` | Stage 2 rules, expected results, design overview and this section | Documentation |
-| `diagrams/RestaurantRush.drawio`, `.pdf` | Class diagram updated for the Stage 2 classes | Must match the code |
-| `.gitignore` | Ignores the local `docs/` folder | Housekeeping |
+| `diagrams/RestaurantRush.drawio`, `.pdf` | Renamed to `RestaurantRushStage1.drawio` and `.pdf`; content unchanged | Keeps the Stage 1 diagram as evidence next to the new Stage 2 diagram |
+| `.gitignore` | Ignores the local `docs/` folder and draw.io backup files (`*.bkp`) | Housekeeping |
 
 **Unchanged run files:** `runs/defeat.txt` and `runs/rule-checks.txt` still give DEFEAT and the same rule rejections under Stage 2.
 
-**Deleted files:** none.
+**Deleted files:** none. The Stage 1 diagram was renamed, not deleted.
 
 ### Stage 2 → Stage 3
 
