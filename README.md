@@ -227,10 +227,19 @@ Each stage is a tagged, runnable commit: `git checkout stage-1` (or `stage-2`, `
 
 | # | Segment | Timestamp | Presenter |
 |---|---|---|---|
-| 1 | The game launching from the submitted project | _TBD_ | _TBD_ |
-| 2 | Meaningful manager choices, including a decision where staff are constrained | _TBD_ | _TBD_ |
-| 3 | A dish going READY → SERVED → payment | _TBD_ | _TBD_ |
-| 4 | A VIP or Critic behaviour | _TBD_ | _TBD_ |
-| 5 | A Stage 3 feature | _TBD_ | _TBD_ |
-| 6 | One victory and one defeat | _TBD_ | _TBD_ |
-| 7 | The stage tag comparisons and the diagrams | _TBD_ | _TBD_ |
+| 1 | Introduction and Project Overview | 0:00 | Zhe Yu |
+| 2 | Software demo: victory walkthrough | 1:00 | Caleb |
+| 3 | Software demo: VIP customer | 2:01 | Caleb |
+| 4 | Software demo:  Critic customer | 3:00 | Caleb |
+| 5 | Software demo: Happy hour activation | 3:20 | Caleb |
+| 6 | Software demo: defeat walkthrough | 4:55 | Caleb |
+| 7 | Sequence Diagrams for StartTurnAndHappyHour use case| 5:29 | Jay |
+| 8 | Class Diagram Stage 1| 7:42 | Lucas |
+| 9 | Class Diagram Stage 2| 8:20 | Lucas |
+| 10 | Class Diagram Stage 3| 8:57 | Lucas |
+| 11 | Zhe Yu Contributions & Reflection | 9:45 | Zhe Yu |
+| 12 | Lucas Contributions & Reflection | 10:17 | Lucas |
+| 13 | Jay Contributions & Reflection | 10:44 | Jay |
+| 14 | Caleb Contributions & Reflection | 12:21 | Caleb |
+
+Video Link: https://youtu.be/X0fI8A6UyE4
